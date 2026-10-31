@@ -1,4 +1,4 @@
-import { UserError } from "@/lib/errors";
+import { UserError } from "./errors.ts";
 
 /**
  * The product catalog. In a real shop this is your database or CMS. It is a typed file here so the

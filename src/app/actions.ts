@@ -77,8 +77,9 @@ export async function createOrder(input: z.input<typeof cartSchema>) {
       return { intentId: intent.id, totalCents: cart.totalCents };
     } catch (e) {
       if (!(e instanceof NuvionError) || e.type !== "error_duplicate_resource") throw e;
-      const page = await nuvion<{ data: PaymentIntent[] }>("GET", `/payment-intents?reference=${encodeURIComponent(v.orderId)}&entity_id=${env.entityId}`);
-      const existing = page.data[0];
+      // This list returns its results under `items`, unlike most other Nuvion lists, which use `data`.
+      const page = await nuvion<{ items: PaymentIntent[] }>("GET", `/payment-intents?reference=${encodeURIComponent(v.orderId)}&entity_id=${env.entityId}`);
+      const existing = page.items[0];
       if (!existing || existing.status !== "requires_action") throw new UserError("This order was already submitted. Refresh the page to start a new one.");
       return { intentId: existing.id, totalCents: existing.amount };
     }

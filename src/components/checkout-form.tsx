@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ComponentProps } from "react";
+import { useMemo, useRef, useState, type ComponentProps } from "react";
 import { toast } from "sonner";
 import { confirmOrder, createOrder } from "@/app/actions";
 import { useCart } from "@/components/cart-provider";
@@ -36,9 +36,11 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
   const { lines, ready, clear } = useCart();
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState("");
-  // Generated once per page load. It becomes the payment reference, so a double click or a retry
-  // reuses the same payment instead of charging twice.
-  const [orderId] = useState(() => crypto.randomUUID());
+  const [error, setError] = useState("");
+  // Created on the first submit and kept for the life of the page. It becomes the payment reference, so a
+  // double click or a retry reuses the same payment instead of charging twice. (Made here, not during
+  // render, because a random value in render can't be prerendered.)
+  const orderIdRef = useRef<string | null>(null);
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", holder: "" });
 
   const cart = useMemo(() => {
@@ -64,6 +66,8 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending) return;
+    orderIdRef.current ??= crypto.randomUUID();
+    const orderId = orderIdRef.current;
     const f = new FormData(e.currentTarget);
     const text = (k: string) => String(f.get(k) ?? "").trim();
 
@@ -72,6 +76,7 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
     if (!/^(0[1-9]|1[0-2])$/.test(month) || !/^\d{2}$/.test(yearRaw)) return void toast.error("Enter the expiry date as MM / YY.");
 
     setPending(true);
+    setError("");
     try {
       setStep("Creating your order…");
       const order = await createOrder({
@@ -109,7 +114,10 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
       clear();
       router.push(`/order/${order.intentId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      // WebCrypto errors often have an empty message, so fall back to the error name.
+      const message = (err instanceof Error && (err.message || err.name)) || "Something went wrong. Please try again.";
+      setError(message);
+      toast.error(message);
       setPending(false);
       setStep("");
     }
@@ -183,6 +191,7 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
               <div className="flex justify-between pt-1 text-base font-semibold"><span>Total</span><span className="tabular-nums">{formatMoney(cart.totalCents)}</span></div>
             </div>
             <Button type="submit" size="lg" className="w-full" disabled={pending}>{pending ? step || "Processing…" : `Pay ${formatMoney(cart.totalCents)}`}</Button>
+            {error && <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
             <p className="text-xs text-muted-foreground">Demo store on the Nuvion sandbox. No real charges are made.</p>
           </CardContent>
         </Card>
