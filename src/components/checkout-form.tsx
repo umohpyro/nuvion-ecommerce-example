@@ -33,7 +33,7 @@ function Field({ label, id, className, ...props }: { label: string; id: string }
 
 export function CheckoutForm({ publicKey }: { publicKey: string }) {
   const router = useRouter();
-  const { lines, ready, clear } = useCart();
+  const { lines, ready } = useCart();
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
@@ -111,7 +111,7 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
         window.location.assign(paid.challengeUrl);
         return;
       }
-      clear();
+      // The cart stays until the order page sees a paid status, so a declined card can retry with the same items.
       router.push(`/order/${order.intentId}`);
     } catch (err) {
       // WebCrypto errors often have an empty message, so fall back to the error name.
