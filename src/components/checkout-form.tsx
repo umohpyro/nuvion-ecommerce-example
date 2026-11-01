@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, type ComponentProps } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { toast } from "sonner";
 import { confirmOrder, createOrder } from "@/app/actions";
 import { useCart } from "@/components/cart-provider";
@@ -42,6 +42,16 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
   // render, because a random value in render can't be prerendered.)
   const orderIdRef = useRef<string | null>(null);
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", holder: "" });
+
+  // Next keeps a page's state alive while you're on another route, so coming back via "Try checkout
+  // again" would show the old "Confirming payment…" button. Clean up when the page is hidden so the
+  // next visit starts a fresh attempt with a new reference.
+  useEffect(() => () => {
+    orderIdRef.current = null;
+    setPending(false);
+    setStep("");
+    setError("");
+  }, []);
 
   const cart = useMemo(() => {
     try {
