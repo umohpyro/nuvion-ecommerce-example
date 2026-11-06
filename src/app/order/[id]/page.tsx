@@ -52,9 +52,9 @@ async function Order({ params }: { params: PageProps<"/order/[id]">["params"] })
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-2xl">
-          {paid && <CircleCheck className="size-7 text-emerald-600" aria-hidden />}
+          {paid && <CircleCheck className="size-7 text-ok" aria-hidden />}
           {failed && <CircleAlert className="size-7 text-destructive" aria-hidden />}
-          {!paid && !failed && <Clock className="size-7 text-amber-600" aria-hidden />}
+          {!paid && !failed && <Clock className="size-7 text-warn" aria-hidden />}
           {paid ? "Thank you. Your order is confirmed." : failed ? "The payment didn't go through." : waiting ? "Confirming your payment…" : "This order isn't paid."}
         </CardTitle>
       </CardHeader>

@@ -34,7 +34,7 @@ export function SettingsForm({ connected }: { connected: Connected | null }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CircleCheck className="size-5 text-emerald-600" aria-hidden /> You&apos;re connected</CardTitle>
+          <CardTitle className="flex items-center gap-2"><CircleCheck className="size-5 text-ok" aria-hidden /> You&apos;re connected</CardTitle>
           <CardDescription>Orders run in your own Nuvion sandbox. Your keys are sealed in this browser session and expire after eight hours.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
