@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { clearConfig, configSchema, saveConfig } from "@/lib/config";
+import { clearConfig, configSchema, getConfig, saveConfig } from "@/lib/config";
 import { ConfigError } from "@/lib/env";
 import { limited } from "@/lib/ratelimit";
 import { NuvionError, nuvionAs, type ApiAccount, type ApiEntity } from "@/lib/nuvion";
@@ -68,6 +68,18 @@ export async function connect(input: z.input<typeof configSchema>) {
     revalidatePath("/", "layout");
     return {};
   });
+}
+
+/** Same lookup for the key already sealed in the cookie, so a connected visitor can switch entity without retyping it. */
+export async function lookupStored() {
+  const { apiKey } = await getConfig();
+  return lookup({ apiKey });
+}
+
+/** Moves a connected visitor to another of their entities and USD accounts. The keys stay sealed on the server. */
+export async function switchEntity(input: { entityId: string; accountId: string }) {
+  const { apiKey, encryptionKey } = await getConfig();
+  return connect({ apiKey, encryptionKey, entityId: input.entityId, accountId: input.accountId });
 }
 
 export async function disconnect() {
