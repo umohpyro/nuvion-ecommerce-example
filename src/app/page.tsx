@@ -7,11 +7,11 @@ import { PRODUCTS } from "@/lib/catalog";
 export default function HomePage() {
   return (
     <>
-      <section className="border-b bg-gradient-to-b from-accent/60 to-transparent">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground">Roasted to order</p>
+      <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+        <div className="rounded-[28px] bg-linear-to-br from-band from-30% to-[#7a1030] px-6 py-14 text-band-foreground sm:px-12 sm:py-20">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-sand-fixed">Roasted to order</p>
           <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight text-balance sm:text-6xl">Coffee that tastes like where it grew.</h1>
-          <p className="mt-5 max-w-xl text-lg text-muted-foreground text-pretty">
+          <p className="mt-5 max-w-xl text-lg text-band-foreground/90 text-pretty">
             Small batches from six farms, roasted the week you order. This is a demo store: it runs on the Nuvion sandbox, so no real charges are made.
           </p>
         </div>

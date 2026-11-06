@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { clearConfig, configSchema, saveConfig } from "@/lib/config";
 import { ConfigError } from "@/lib/env";
+import { limited } from "@/lib/ratelimit";
 import { NuvionError, nuvionAs, type ApiAccount, type ApiEntity } from "@/lib/nuvion";
 
 /*
@@ -28,6 +30,13 @@ async function guard<T extends object>(fn: () => Promise<T>): Promise<Result<T>>
   }
 }
 
+/** These actions call Nuvion with a key a stranger typed, from this server, so cap how often one address can try. */
+async function throttle() {
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const wait = limited(ip, 10, 60_000);
+  if (wait) throw new ConfigError(`Too many attempts. Try again in ${wait} seconds.`);
+}
+
 const keySchema = z.object({ apiKey: z.string().trim().min(10, "Enter your sandbox API key.").max(200) });
 
 export interface Option { id: string; name: string; entityId?: string }
@@ -35,6 +44,7 @@ export interface Option { id: string; name: string; entityId?: string }
 /** Lists the visitor's approved entities and their USD accounts, so they can pick instead of copying IDs. */
 export async function lookup(input: z.input<typeof keySchema>) {
   return guard(async () => {
+    await throttle();
     const { apiKey } = keySchema.parse(input);
     const entities = (await nuvionAs<{ data: ApiEntity[] }>(apiKey, "GET", "/entities?limit=50")).data.filter((e) => e.status === "approved").slice(0, 10);
     const accounts = (
@@ -50,6 +60,7 @@ export async function lookup(input: z.input<typeof keySchema>) {
 /** Checks the keys work, then saves everything in the visitor's sealed cookie. */
 export async function connect(input: z.input<typeof configSchema>) {
   return guard(async () => {
+    await throttle();
     const cfg = configSchema.parse(input);
     const { account } = await nuvionAs<{ account: ApiAccount }>(cfg.apiKey, "GET", `/accounts/${cfg.accountId}?entity_id=${cfg.entityId}`);
     if (account.currency !== "USD") throw new ConfigError("Choose a USD account. This store charges in dollars.");
