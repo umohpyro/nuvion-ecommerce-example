@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import { ConnectNotice } from "@/components/connect-notice";
+import { readConfig } from "@/lib/config";
 import { ProductCard } from "@/components/product-card";
 import { PRODUCTS } from "@/lib/catalog";
 
@@ -13,6 +16,9 @@ export default function HomePage() {
           </p>
         </div>
       </section>
+      <Suspense fallback={null}>
+        <HomeNotice />
+      </Suspense>
       <section aria-labelledby="coffees" className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <h2 id="coffees" className="mb-8 text-2xl font-extrabold tracking-tight">All coffees</h2>
         <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
@@ -21,4 +27,10 @@ export default function HomePage() {
       </section>
     </>
   );
+}
+
+/** Only visitors who haven't connected see this. Connected visitors get nothing extra. */
+async function HomeNotice() {
+  if (await readConfig()) return null;
+  return <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6"><ConnectNotice /></div>;
 }

@@ -7,7 +7,7 @@ import { AutoRefresh, ClearCartOnSuccess } from "@/components/order-effects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { env } from "@/lib/env";
+import { getConfig } from "@/lib/config";
 import { NuvionError, nuvion, type PaymentIntent } from "@/lib/nuvion";
 import { formatDate, formatMoney } from "@/lib/money";
 
@@ -35,7 +35,8 @@ async function Order({ params }: { params: PageProps<"/order/[id]">["params"] })
   // The source of truth is Nuvion, never the URL. Returning from 3DS only means the shopper came back.
   let intent: PaymentIntent;
   try {
-    intent = await nuvion<PaymentIntent>("GET", `/payment-intents/${id}?entity_id=${env.entityId}`);
+    const cfg = await getConfig();
+    intent = await nuvion<PaymentIntent>("GET", `/payment-intents/${id}?entity_id=${cfg.entityId}`);
   } catch (e) {
     if (e instanceof NuvionError && e.httpStatus === 404) notFound();
     throw e;
