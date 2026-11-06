@@ -3,7 +3,7 @@
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { connect, disconnect, lookup, type Option } from "@/app/settings/actions";
+import { type Option, connect, disconnect, lookup, lookupStored, switchEntity } from "@/app/settings/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,9 @@ export function SettingsForm({ connected }: { connected: Connected | null }) {
   const [accounts, setAccounts] = useState<Option[]>([]);
   const [entityId, setEntityId] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [sw, setSw] = useState<{ entities: Option[]; accounts: Option[] } | null>(null);
+  const [swEntity, setSwEntity] = useState("");
+  const [swAccount, setSwAccount] = useState("");
   const [message, setMessage] = useState<{ kind: "error" | "warn" | "ok"; text: string } | null>(null);
 
   const run = (fn: () => Promise<void>) => start(async () => { setMessage(null); await fn(); });
@@ -43,9 +46,37 @@ export function SettingsForm({ connected }: { connected: Connected | null }) {
             <dt className="text-muted-foreground">Account</dt><dd className="font-mono break-all">{connected.accountId}</dd>
           </dl>
           {message && <Alert variant={message.kind === "error" ? "destructive" : "default"}><AlertDescription>{message.text}</AlertDescription></Alert>}
+          {sw && (
+            <div className="space-y-3 rounded-xl border p-4">
+              <Label htmlFor="switch-entity">Switch to another entity</Label>
+              <select id="switch-entity" className={selectClass} value={swEntity} onChange={(e) => { setSwEntity(e.target.value); setSwAccount(sw.accounts.find((a) => a.entityId === e.target.value)?.id ?? ""); }}>
+                {sw.entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+              <Label htmlFor="switch-account">USD account</Label>
+              <select id="switch-account" className={selectClass} value={swAccount} onChange={(e) => setSwAccount(e.target.value)} disabled={!sw.accounts.some((a) => a.entityId === swEntity)}>
+                {sw.accounts.filter((a) => a.entityId === swEntity).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <div className="flex gap-3">
+                <Button disabled={pending || !swAccount} onClick={() => run(async () => {
+                  const r = await switchEntity({ entityId: swEntity, accountId: swAccount });
+                  if (!r.ok) return setMessage({ kind: "error", text: r.error });
+                  setSw(null);
+                })}>{pending ? "Switching…" : "Switch"}</Button>
+                <Button variant="ghost" onClick={() => setSw(null)}>Cancel</Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-3">
             <Button render={<Link href="/" />} nativeButton={false}>Start shopping</Button>
-            <Button variant="ghost" disabled={pending} onClick={() => run(async () => { await disconnect(); })}>Disconnect</Button>
+            <Button variant="outline" disabled={pending} onClick={() => run(async () => {
+              const r = await lookupStored();
+              if (!r.ok) return setMessage({ kind: "error", text: r.error });
+              setSw(r);
+              const cur = r.entities.find((e) => e.id === connected.entityId) ?? r.entities[0];
+              setSwEntity(cur?.id ?? "");
+              setSwAccount(r.accounts.find((a) => a.entityId === cur?.id)?.id ?? "");
+            })}>Switch entity</Button>
+            <Button variant="ghost" disabled={pending} onClick={() => run(async () => { await disconnect(); })}>Disconnect and forget my key</Button>
           </div>
         </CardContent>
       </Card>
