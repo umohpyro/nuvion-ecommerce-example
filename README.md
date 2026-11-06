@@ -2,9 +2,9 @@
 
 A small coffee store that takes card payments through the [Nuvion](https://docs.nuvion.co) sandbox. It has **no database**: the catalog is a file, the cart lives in the browser, and Nuvion holds every payment. It runs on Next.js 16, React 19, Tailwind CSS 4 and shadcn/ui.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fumohpyro%2Fnuvion-ecommerce-example&project-name=harbor-pine-shop&repository-name=nuvion-ecommerce-example&env=NUVION_API_KEY,NUVION_ENCRYPTION_PUBLIC_KEY&envDescription=Your%20Nuvion%20sandbox%20API%20key%20and%20its%20encryption%20public%20key&envLink=https%3A%2F%2Fapp.nuvion.dev%2Fdashboard%2Fsettings)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fumohpyro%2Fnuvion-ecommerce-example&project-name=harbor-pine-shop&repository-name=nuvion-ecommerce-example&env=SESSION_SECRET&envDescription=A%20long%20random%20string%20that%20seals%20each%20visitor%27s%20cookie&envLink=https%3A%2F%2Fgithub.com%2Fumohpyro%2Fnuvion-ecommerce-example%23run-it)
 
-> The button works once this repository is public. After the first deploy, open `/setup` on your site to find your entity and account IDs, add them in Vercel, and redeploy.
+> The button works once this repository is public. It asks for one value, `SESSION_SECRET`. Visitors add their own Nuvion sandbox keys on the Settings page.
 
 ## What it shows
 
@@ -13,27 +13,34 @@ A small coffee store that takes card payments through the [Nuvion](https://docs.
 | Shop, product, cart | Catalog and cart with no server state | none |
 | Checkout | Pricing on the server, card encryption in the browser, 3DS | `POST /payment-intents`, `POST /intent-actions` |
 | Order | Reading the real payment status, never trusting the URL | `GET /payment-intents/{id}` |
-| `/api/webhooks/nuvion` | Signature verification | none (receives `payment_intent.*` events) |
-| `/setup` | First-run checks and an ID lookup | `GET /entities`, `GET /accounts` |
+| `/settings` | Connect your own sandbox: key, entity and account lookup | `GET /entities`, `GET /accounts` |
 
 ## Run it
+
+This store is bring-your-own-key. Nothing about your Nuvion account is stored on the server or shared between visitors: each visitor connects their own sandbox on the **Settings** page, and every order runs in their own tenant, so you can confirm it in your own dashboard.
 
 You need Node.js 20.9 or later, a Nuvion **sandbox** account, and an approved entity with a USD account to receive payments.
 
 ```bash
-cp .env.example .env.local   # fill in the values
 npm install
 npm run dev
 ```
 
-| Variable | Where to get it |
-|---|---|
-| `NUVION_API_KEY` | Sandbox dashboard, Settings > Developers |
-| `NUVION_ENCRYPTION_PUBLIC_KEY` | Shown next to the API key. Paste the whole `-----BEGIN PUBLIC KEY-----` block. Write line breaks as `\n` in an env file; hosting dashboards also accept real line breaks |
-| `NUVION_ENTITY_ID`, `NUVION_ACCOUNT_ID` | Open `/setup`: it lists your approved entities and USD accounts |
-| `NUVION_WEBHOOK_SECRET` | Optional. Returned once when you register a webhook |
+Open http://localhost:3000/settings and enter:
 
-The values are read when the site is built, so after changing them in a host, redeploy.
+| Value | Where to get it |
+|---|---|
+| Sandbox API key | Sandbox dashboard, [Settings > Developers](https://app.nuvion.dev/dashboard/settings). See [how API keys work](https://docs.nuvion.co/authentication) |
+| Encryption public key | Shown next to the API key. Paste the whole `-----BEGIN PUBLIC KEY-----` block |
+| Entity and USD account | Pick them from the list the page loads with your key |
+
+Your keys are sealed in an `httpOnly` cookie that expires after eight hours.
+
+| Variable | Description |
+|---|---|
+| `SESSION_SECRET` | Required in production: a long random string that seals the cookie. Local development generates one for you |
+| `NUVION_API_URL` | Optional. Must be a `*.nuvion.dev` host |
+| `PUBLIC_APP_URL` | Optional. Public https address for the 3DS return. On Vercel it is detected automatically |
 
 Test cards (any future expiry, any 3 digit CVV): `4111 1111 1111 1111` and `5555 5555 5555 4444` approve; `4000 0000 0000 9995` declines for insufficient funds. Real card numbers are refused in the sandbox.
 
@@ -58,7 +65,7 @@ These come from running the flow against the sandbox. Each one shapes the code.
 This example leaves out what needs a database. Add these before taking real orders:
 
 - **Order records.** Save each order when you create the payment, so you can list orders and show history.
-- **Idempotent fulfillment.** Nuvion retries webhooks and can deliver an event twice. Record each event ID and ship goods exactly once. The webhook route verifies signatures and acknowledges, then points at where this goes.
+- **Idempotent fulfillment.** Nuvion retries webhooks and can deliver an event twice. Record each event ID and ship goods exactly once. `src/lib/webhook.ts` shows how to verify a webhook signature.
 - **Customer accounts and receipts.**
 - **Tax, shipping rates and stock levels.**
 - **Rate limiting** on the checkout actions, since the site is public.
@@ -73,7 +80,8 @@ src/lib/encrypt-card.ts   Browser card encryption (RSA-OAEP, SHA-256)
 src/lib/webhook.ts        Signature verification
 src/app/actions.ts        createOrder and confirmOrder server actions
 src/app/order/[id]        Order status read from Nuvion
-src/app/setup             First-run checks
+src/lib/config.ts         The visitor's own keys, sealed in a cookie
+src/app/settings          Where a visitor connects their sandbox
 ```
 
 Server Actions are public endpoints, so each one validates its input with zod and never accepts a price. The API host is checked, not the key prefix: the app refuses any URL that isn't `*.nuvion.dev`.
@@ -84,6 +92,6 @@ Server Actions are public endpoints, so each one validates its input with zod an
 |---|---|
 | `npm run dev` | Dev server |
 | `npm run build` | Production build |
-| `npm test` | Unit tests for pricing and webhook verification |
+| `npm test` | Unit tests for pricing, webhook verification and the cookie sealing |
 | `npm run typecheck` | Type-check |
 | `npm run lint` | Lint |

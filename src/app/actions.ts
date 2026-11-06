@@ -3,7 +3,8 @@
 import { headers } from "next/headers";
 import { z } from "zod";
 import { priceCart } from "@/lib/catalog";
-import { ConfigError, env } from "@/lib/env";
+import { getConfig } from "@/lib/config";
+import { ConfigError } from "@/lib/env";
 import { UserError } from "@/lib/errors";
 import { NuvionError, nuvion, type IntentAction, type PaymentIntent } from "@/lib/nuvion";
 import { CURRENCY } from "@/lib/money";
@@ -23,7 +24,7 @@ async function guard<T extends object>(fn: () => Promise<T>): Promise<Result<T>>
     if (e instanceof NuvionError) return { ok: false, error: friendly(e), code: e.type };
     if (e instanceof z.ZodError) return { ok: false, error: e.issues[0]?.message ?? "Please check your details." };
     if (e instanceof UserError) return { ok: false, error: e.message };
-    if (e instanceof ConfigError) return { ok: false, error: `${e.message} The shop owner can finish setup at /setup.`, code: "config" };
+    if (e instanceof ConfigError) return { ok: false, error: `${e.message} Open Settings to add your own sandbox keys.`, code: "config" };
     console.error(e);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
@@ -63,14 +64,15 @@ export async function createOrder(input: z.input<typeof cartSchema>) {
   return guard(async () => {
     const v = cartSchema.parse(input);
     const cart = priceCart(v.lines);
+    const cfg = await getConfig();
     const summary = cart.lines.map((l) => `${l.qty}x ${l.product.name}`).join(", ").slice(0, 150);
 
     try {
       const intent = await nuvion<PaymentIntent>("POST", "/payment-intents", {
         currency: CURRENCY,
         amount: cart.totalCents,
-        account_id: env.accountId,
-        entity_id: env.entityId,
+        account_id: cfg.accountId,
+        entity_id: cfg.entityId,
         reference: v.orderId,
         description: `Order ${v.orderId.slice(0, 8)}: ${summary}`,
       });
@@ -78,7 +80,7 @@ export async function createOrder(input: z.input<typeof cartSchema>) {
     } catch (e) {
       if (!(e instanceof NuvionError) || e.type !== "error_duplicate_resource") throw e;
       // This list returns its results under `items`, unlike most other Nuvion lists, which use `data`.
-      const page = await nuvion<{ items: PaymentIntent[] }>("GET", `/payment-intents?reference=${encodeURIComponent(v.orderId)}&entity_id=${env.entityId}`);
+      const page = await nuvion<{ items: PaymentIntent[] }>("GET", `/payment-intents?reference=${encodeURIComponent(v.orderId)}&entity_id=${cfg.entityId}`);
       const existing = page.items[0];
       if (!existing || existing.status !== "requires_action") throw new UserError("This order was already submitted. Refresh the page to start a new one.");
       return { intentId: existing.id, totalCents: existing.amount };
@@ -114,12 +116,13 @@ const confirmSchema = z.object({
 export async function confirmOrder(input: z.input<typeof confirmSchema>) {
   return guard(async () => {
     const v = confirmSchema.parse(input);
+    const cfg = await getConfig();
     const h = await headers();
     const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "127.0.0.1";
 
     const action = await nuvion<IntentAction>("POST", "/intent-actions", {
       payment_intent_id: v.intentId,
-      entity_id: env.entityId,
+      entity_id: cfg.entityId,
       intent_action: {
         action: "confirm",
         category: "collections",

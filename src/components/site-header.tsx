@@ -16,6 +16,7 @@ export function SiteHeader() {
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1 text-sm font-medium">
           <Link href="/" className="rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground">Shop</Link>
+          <Link href="/settings" className="rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground">Settings</Link>
           <Link href="/cart" className="relative flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted" aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}>
             <ShoppingBag className="size-4" aria-hidden />
             <span>Cart</span>
