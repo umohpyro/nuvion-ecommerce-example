@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import { Suspense } from "react";
 import { CartProvider } from "@/components/cart-provider";
 import { MiniCart } from "@/components/mini-cart";
@@ -27,7 +28,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-            <p>Sandbox only. Harbor &amp; Pine is a demo store: nothing here is real and no money moves. Your API key is sealed in an encrypted cookie in this browser and expires after eight hours.</p>
+            <p>Independent demo store. Sandbox only, no real orders or payments. Not affiliated with any brand shown.</p>
+            <p className="mt-2">Your API key is sealed in an encrypted cookie in this browser and expires after eight hours. <Link href="/privacy" className="underline underline-offset-4">Privacy</Link></p>
           </footer>
           {/* usePathname() reads the URL, so the mini-cart streams in behind Suspense. */}
           <Suspense fallback={null}>

@@ -6,6 +6,8 @@ A small coffee store that takes card payments through the [Nuvion](https://docs.
 
 > The button works once this repository is public. It asks for one value, `SESSION_SECRET`. Visitors add their own Nuvion sandbox keys on the Settings page.
 
+> Independent demo store. Sandbox only, no real orders or payments. Not affiliated with any brand shown. Use fake details only. See the app's `/privacy` page.
+
 ## What it shows
 
 | Page | What it demonstrates | Nuvion calls |

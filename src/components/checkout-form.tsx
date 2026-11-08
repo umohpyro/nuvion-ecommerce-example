@@ -136,6 +136,7 @@ export function CheckoutForm({ publicKey }: { publicKey: string }) {
   return (
     <form onSubmit={onSubmit} className="grid gap-8 lg:grid-cols-[1fr_22rem]">
       <div className="space-y-6">
+        <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">Use fake details only. Enter made-up names, addresses and contact details, never real personal data.</p>
         <Card>
           <CardHeader><CardTitle>Contact</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
