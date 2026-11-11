@@ -32,6 +32,10 @@
   --color-band: var(--band);
   --color-band-foreground: var(--band-foreground);
   --color-sand-fixed: var(--sand-fixed);
+  --color-leaf: var(--leaf);
+  --color-leaf-deep: var(--leaf-deep);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-leaf-text: var(--leaf-text);
   --shadow-card: var(--shadow);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -70,6 +74,10 @@
   --band-foreground: #f4f2f2;
   --sand-fixed: #f6dcd5;          /* sand on dark bands in both themes */
   --shadow: 0 18px 44px -24px rgba(48, 4, 2, 0.4);
+  --leaf: #2e9e4f;                /* shop accent: green, fills and bands */
+  --leaf-deep: #12452a;           /* hero and header ground */
+  --leaf-soft: #e3f3e8;           /* chips and panels */
+  --leaf-text: #1f7a4a;           /* green as text on light, AA */
 }
 
 /* Dark is designed with light: the same tokens on an Earth-tinted ground. */
@@ -94,6 +102,9 @@
   --warn: #ffb38a;
   --band: #0f0302;
   --shadow: 0 18px 44px -24px rgba(0, 0, 0, 0.8);
+  --leaf-deep: #0d2e1c;
+  --leaf-soft: #17321f;
+  --leaf-text: #6fd69b;
 }
 
 @layer base {
